@@ -1,0 +1,10 @@
+{
+  "name": "Tradutor Profectum",
+  "short_description": "Traduza campos customizados nos seus pipes do Pipefy",
+  "description": "Traduza automaticamente rotulos de campos customizados, nomes de fases e opcoes de selecao.",
+  "icon": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/translate.svg",
+  "author": "Profectum",
+  "init_url": "./init.html",
+  "screenshots": [],
+  "features": ["pipe-buttons"]
+}
