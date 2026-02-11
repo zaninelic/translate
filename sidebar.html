@@ -21,7 +21,9 @@
     }
     .lang-btn:hover { border-color: #b0bec5; }
     .lang-btn.active { border-color: #4a90d9; background: #e8f0fe; font-weight: 600; }
-    .status { padding: 12px; border-radius: 8px; font-size: 13px; margin-top: 12px; }
+    .status {
+      padding: 12px; border-radius: 8px; font-size: 13px; margin-top: 12px;
+    }
     .status-success { background: #e8f5e9; color: #2e7d32; }
     .status-info { background: #e3f2fd; color: #1565c0; }
     .status-error { background: #ffebee; color: #c62828; }
@@ -32,7 +34,6 @@
     }
     .reset-btn:hover { background: #f5f5f5; }
     .loading { font-size: 13px; color: #999; text-align: center; }
-    .auto-badge { font-size: 11px; color: #4a90d9; margin-left: 4px; }
   </style>
 </head>
 <body>
@@ -59,7 +60,6 @@
       var p = PipefyApp.init();
       var userLocale = p.locale || '';
       var selectedLang = '';
-      var originalTexts = new Map();
 
       var contentEl = document.getElementById('content');
       var statusArea = document.getElementById('status-area');
@@ -103,36 +103,25 @@
         });
       }
 
+      // --- postMessage approach (no direct DOM access to parent) ---
       function applyTranslations(dictionary) {
-        var count = 0;
-        try {
-          var parentDoc = window.parent.document;
-          var walker = parentDoc.createTreeWalker(parentDoc.body, NodeFilter.SHOW_TEXT);
-          var node;
-          while ((node = walker.nextNode())) {
-            var original = node.textContent || '';
-            var normalized = original.replace(/\s+/g, ' ').trim();
-            if (normalized && dictionary[normalized]) {
-              if (!originalTexts.has(node)) originalTexts.set(node, original);
-              node.textContent = original.replace(normalized, dictionary[normalized]);
-              count++;
-            }
-          }
-          var inputs = parentDoc.querySelectorAll('input[placeholder], textarea[placeholder]');
-          inputs.forEach(function(el) {
-            var normalized = el.placeholder.replace(/\s+/g, ' ').trim();
-            if (dictionary[normalized]) {
-              if (!originalTexts.has(el)) originalTexts.set(el, el.placeholder);
-              el.placeholder = dictionary[normalized];
-              count++;
-            }
-          });
-          notify('✅ ' + count + ' termos traduzidos!', 'success');
-          statusArea.innerHTML += '<p class="term-count">' + Object.keys(dictionary).length + ' termos disponíveis no dicionário</p>';
-        } catch (e) {
-          notify('⚠️ Não foi possível acessar a página pai. ' + (e.message || e), 'error');
-        }
+        window.parent.postMessage({
+          type: 'TRADUTOR_APPLY',
+          dictionary: dictionary
+        }, '*');
+        notify('✅ Traduções enviadas! Verifique se o Companion está ativo.', 'success');
+        statusArea.innerHTML += '<p class="term-count">' + Object.keys(dictionary).length + ' termos disponíveis no dicionário</p>';
       }
+
+      function resetTranslations() {
+        window.parent.postMessage({ type: 'TRADUTOR_RESET' }, '*');
+        selectedLang = '';
+        updateActiveButton('');
+        notify('Traduções restauradas ao original.', 'info');
+        actionsEl.innerHTML = '';
+        try { p.set('pipe', 'private', 'lang', ''); } catch(e) {}
+      }
+      // --- end postMessage ---
 
       function selectLanguage(lang) {
         selectedLang = lang;
@@ -153,22 +142,6 @@
         .catch(function() {
           notify('Erro ao buscar traduções.', 'error');
         });
-      }
-
-      function resetTranslations() {
-        originalTexts.forEach(function(original, node) {
-          if (node.nodeType === Node.TEXT_NODE) {
-            node.textContent = original;
-          } else if (node.placeholder !== undefined) {
-            node.placeholder = original;
-          }
-        });
-        originalTexts.clear();
-        selectedLang = '';
-        updateActiveButton('');
-        notify('Traduções restauradas ao original.', 'info');
-        actionsEl.innerHTML = '';
-        try { p.set('pipe', 'private', 'lang', ''); } catch(e) {}
       }
 
       function matchLocale(locale, languages) {
