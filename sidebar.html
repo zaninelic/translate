@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tradutor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 20px; color: #1a1a2e; background: #fafbfc; min-height: 100vh;
+    }
+    h2 { font-size: 18px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+    .pipe-name { font-size: 13px; color: #666; margin-bottom: 16px; font-weight: 400; }
+    .subtitle { font-size: 13px; color: #666; margin-bottom: 16px; }
+    .lang-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+    .lang-btn {
+      padding: 10px 12px; border: 2px solid #e0e6ed; border-radius: 8px;
+      background: #fff; cursor: pointer; font-size: 14px; text-align: center;
+      font-weight: 400; transition: all 0.15s;
+    }
+    .lang-btn:hover { border-color: #b0bec5; }
+    .lang-btn.active { border-color: #4a90d9; background: #e8f0fe; font-weight: 600; }
+    .status { padding: 12px; border-radius: 8px; font-size: 13px; margin-top: 12px; }
+    .status-success { background: #e8f5e9; color: #2e7d32; }
+    .status-info { background: #e3f2fd; color: #1565c0; }
+    .status-error { background: #ffebee; color: #c62828; }
+    .term-count { font-size: 12px; color: #8899aa; margin-top: 8px; }
+    .reset-btn {
+      margin-top: 16px; padding: 8px 16px; border: 1px solid #e0e6ed;
+      border-radius: 6px; background: #fff; cursor: pointer; font-size: 13px; color: #666;
+    }
+    .reset-btn:hover { background: #f5f5f5; }
+    .loading { font-size: 13px; color: #999; text-align: center; }
+    .auto-badge { font-size: 11px; color: #4a90d9; margin-left: 4px; }
+  </style>
+</head>
+<body>
+  <h2>🌐 Tradutor</h2>
+  <p class="pipe-name" id="pipe-name"></p>
+  <p class="subtitle">Selecione o idioma para traduzir os campos customizados:</p>
+  <div id="content"><p class="loading">Carregando...</p></div>
+  <div id="status-area"></div>
+  <div id="actions"></div>
+
+  <script src="https://platform.staticpipefy.com/pipefy-app.js"></script>
+  <script>
+    (function() {
+      var SUPABASE_URL = 'https://iervmwscvspisxbktbpx.supabase.co';
+      var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImllcnZtd3NjdnNwaXN4Ymt0YnB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyMDAyNjgsImV4cCI6MjA4NDc3NjI2OH0.hs5OeBEmzEXFrSv1x5kassgo7Po0HTBhN94gaswz3RE';
+      var APP_ID = 'eecfcaa4-e831-46b6-b8e8-a352f056f8e1';
+
+      var LANG_LABELS = {
+        en: 'English', es: 'Español', fr: 'Français', de: 'Deutsch',
+        it: 'Italiano', pt: 'Português', 'pt-BR': 'Português (BR)',
+        ja: '日本語', ko: '한국어', zh: '中文'
+      };
+
+      var p = PipefyApp.init();
+      var userLocale = p.locale || '';
+      var selectedLang = '';
+      var originalTexts = new Map();
+
+      var contentEl = document.getElementById('content');
+      var statusArea = document.getElementById('status-area');
+      var actionsEl = document.getElementById('actions');
+      var pipeNameEl = document.getElementById('pipe-name');
+
+      function notify(msg, type) {
+        try { p.showNotification(msg, type === 'success' ? 'success' : 'error'); } catch(e) {}
+        showStatus(msg, type);
+      }
+
+      function showStatus(msg, type) {
+        statusArea.innerHTML = '<div class="status status-' + type + '">' + msg + '</div>';
+      }
+
+      function renderLanguages(languages, autoLang) {
+        if (languages.length === 0) {
+          contentEl.innerHTML = '<p class="loading">Nenhum idioma disponível. Configure traduções primeiro.</p>';
+          return;
+        }
+        var html = '<div class="lang-grid">';
+        languages.forEach(function(lang) {
+          var label = LANG_LABELS[lang] || lang.toUpperCase();
+          html += '<button class="lang-btn" data-lang="' + lang + '">' + label + '</button>';
+        });
+        html += '</div>';
+        contentEl.innerHTML = html;
+
+        contentEl.querySelectorAll('.lang-btn').forEach(function(btn) {
+          btn.addEventListener('click', function() { selectLanguage(btn.dataset.lang); });
+        });
+
+        if (autoLang) {
+          selectLanguage(autoLang);
+        }
+      }
+
+      function updateActiveButton(lang) {
+        contentEl.querySelectorAll('.lang-btn').forEach(function(btn) {
+          btn.classList.toggle('active', btn.dataset.lang === lang);
+        });
+      }
+
+      function applyTranslations(dictionary) {
+        var count = 0;
+        try {
+          var parentDoc = window.parent.document;
+          var walker = parentDoc.createTreeWalker(parentDoc.body, NodeFilter.SHOW_TEXT);
+          var node;
+          while ((node = walker.nextNode())) {
+            var original = node.textContent || '';
+            var normalized = original.replace(/\s+/g, ' ').trim();
+            if (normalized && dictionary[normalized]) {
+              if (!originalTexts.has(node)) originalTexts.set(node, original);
+              node.textContent = original.replace(normalized, dictionary[normalized]);
+              count++;
+            }
+          }
+          var inputs = parentDoc.querySelectorAll('input[placeholder], textarea[placeholder]');
+          inputs.forEach(function(el) {
+            var normalized = el.placeholder.replace(/\s+/g, ' ').trim();
+            if (dictionary[normalized]) {
+              if (!originalTexts.has(el)) originalTexts.set(el, el.placeholder);
+              el.placeholder = dictionary[normalized];
+              count++;
+            }
+          });
+          notify('✅ ' + count + ' termos traduzidos!', 'success');
+          statusArea.innerHTML += '<p class="term-count">' + Object.keys(dictionary).length + ' termos disponíveis no dicionário</p>';
+        } catch (e) {
+          notify('⚠️ Não foi possível acessar a página pai. ' + (e.message || e), 'error');
+        }
+      }
+
+      function selectLanguage(lang) {
+        selectedLang = lang;
+        updateActiveButton(lang);
+        showStatus('Carregando traduções...', 'info');
+
+        try { p.set('pipe', 'private', 'lang', lang); } catch(e) {}
+
+        fetch(SUPABASE_URL + '/functions/v1/pipefy-app-translations?app_id=' + APP_ID + '&lang=' + encodeURIComponent(lang), {
+          headers: { apikey: SUPABASE_KEY }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          applyTranslations(data.dictionary || {});
+          actionsEl.innerHTML = '<button class="reset-btn" id="reset-btn">↩ Restaurar original</button>';
+          document.getElementById('reset-btn').addEventListener('click', resetTranslations);
+        })
+        .catch(function() {
+          notify('Erro ao buscar traduções.', 'error');
+        });
+      }
+
+      function resetTranslations() {
+        originalTexts.forEach(function(original, node) {
+          if (node.nodeType === Node.TEXT_NODE) {
+            node.textContent = original;
+          } else if (node.placeholder !== undefined) {
+            node.placeholder = original;
+          }
+        });
+        originalTexts.clear();
+        selectedLang = '';
+        updateActiveButton('');
+        notify('Traduções restauradas ao original.', 'info');
+        actionsEl.innerHTML = '';
+        try { p.set('pipe', 'private', 'lang', ''); } catch(e) {}
+      }
+
+      function matchLocale(locale, languages) {
+        if (!locale) return '';
+        if (languages.indexOf(locale) !== -1) return locale;
+        var lower = locale.toLowerCase();
+        for (var i = 0; i < languages.length; i++) {
+          if (languages[i].toLowerCase() === lower) return languages[i];
+        }
+        var prefix = locale.split('-')[0].toLowerCase();
+        for (var j = 0; j < languages.length; j++) {
+          if (languages[j].toLowerCase() === prefix) return languages[j];
+        }
+        return '';
+      }
+
+      var fetchLangs = fetch(SUPABASE_URL + '/functions/v1/pipefy-app-translations?app_id=' + APP_ID, {
+        headers: { apikey: SUPABASE_KEY }
+      }).then(function(r) { return r.json(); });
+
+      var getSavedLang = Promise.resolve('');
+      try {
+        getSavedLang = p.get('pipe', 'private', 'lang').catch(function() { return ''; });
+      } catch(e) {}
+
+      var getPipeName = Promise.resolve('');
+      try {
+        getPipeName = p.pipe().then(function(pipe) { return (pipe && pipe.name) || ''; }).catch(function() { return ''; });
+      } catch(e) {}
+
+      Promise.all([fetchLangs, getSavedLang, getPipeName])
+        .then(function(results) {
+          var data = results[0];
+          var savedLang = results[1];
+          var pipeName = results[2];
+          var languages = data.languages || [];
+
+          if (pipeName) {
+            pipeNameEl.textContent = pipeName;
+          }
+
+          var autoLang = '';
+          if (savedLang && languages.indexOf(savedLang) !== -1) {
+            autoLang = savedLang;
+          } else {
+            autoLang = matchLocale(userLocale, languages);
+          }
+
+          renderLanguages(languages, autoLang);
+        })
+        .catch(function() {
+          contentEl.innerHTML = '<p class="loading" style="color:#c62828;">Erro ao carregar idiomas.</p>';
+        });
+    })();
+  </script>
+</body>
+</html>
