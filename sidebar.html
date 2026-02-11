@@ -34,10 +34,11 @@
     }
     .reset-btn:hover { background: #f5f5f5; }
     .loading { font-size: 13px; color: #999; text-align: center; }
+    .auto-badge { font-size: 11px; color: #4a90d9; margin-left: 4px; }
   </style>
 </head>
 <body>
-  <h2>🌐 Tradutor</h2>
+  <h2>🌐 Tradutor <span id="companion-badge" style="display:none;font-size:11px;color:#10b981;background:#e8f5e9;padding:2px 8px;border-radius:12px;">● Companion ativo</span></h2>
   <p class="pipe-name" id="pipe-name"></p>
   <p class="subtitle">Selecione o idioma para traduzir os campos customizados:</p>
   <div id="content"><p class="loading">Carregando...</p></div>
@@ -60,6 +61,7 @@
       var p = PipefyApp.init();
       var userLocale = p.locale || '';
       var selectedLang = '';
+      var companionActive = false;
 
       var contentEl = document.getElementById('content');
       var statusArea = document.getElementById('status-area');
@@ -103,25 +105,22 @@
         });
       }
 
-      // --- postMessage approach (no direct DOM access to parent) ---
       function applyTranslations(dictionary) {
-        window.parent.postMessage({
-          type: 'TRADUTOR_APPLY',
-          dictionary: dictionary
-        }, '*');
-        notify('✅ Traduções enviadas! Verifique se o Companion está ativo.', 'success');
-        statusArea.innerHTML += '<p class="term-count">' + Object.keys(dictionary).length + ' termos disponíveis no dicionário</p>';
+        try {
+          window.top.postMessage({
+            type: 'TRADUTOR_APPLY',
+            dictionary: dictionary
+          }, '*');
+          if (companionActive) {
+            notify('✅ Traduções enviadas!', 'success');
+          } else {
+            showStatus('⚠️ Traduções enviadas, mas o Companion pode não estar ativo. Clique no bookmarklet Companion na barra de favoritos.', 'info');
+          }
+          statusArea.innerHTML += '<p class="term-count">' + Object.keys(dictionary).length + ' termos no dicionário</p>';
+        } catch (e) {
+          notify('⚠️ Erro ao enviar traduções: ' + (e.message || e), 'error');
+        }
       }
-
-      function resetTranslations() {
-        window.parent.postMessage({ type: 'TRADUTOR_RESET' }, '*');
-        selectedLang = '';
-        updateActiveButton('');
-        notify('Traduções restauradas ao original.', 'info');
-        actionsEl.innerHTML = '';
-        try { p.set('pipe', 'private', 'lang', ''); } catch(e) {}
-      }
-      // --- end postMessage ---
 
       function selectLanguage(lang) {
         selectedLang = lang;
@@ -142,6 +141,17 @@
         .catch(function() {
           notify('Erro ao buscar traduções.', 'error');
         });
+      }
+
+      function resetTranslations() {
+        try {
+          window.top.postMessage({ type: 'TRADUTOR_RESET' }, '*');
+        } catch(e) {}
+        selectedLang = '';
+        updateActiveButton('');
+        notify('Traduções restauradas ao original.', 'info');
+        actionsEl.innerHTML = '';
+        try { p.set('pipe', 'private', 'lang', ''); } catch(e) {}
       }
 
       function matchLocale(locale, languages) {
@@ -195,6 +205,16 @@
         .catch(function() {
           contentEl.innerHTML = '<p class="loading" style="color:#c62828;">Erro ao carregar idiomas.</p>';
         });
+
+      // Ping/pong para verificar se o Companion está ativo
+      window.addEventListener('message', function(e) {
+        if (e.data && e.data.type === 'TRADUTOR_PONG') {
+          companionActive = true;
+          var badge = document.getElementById('companion-badge');
+          if (badge) badge.style.display = 'inline';
+        }
+      });
+      try { window.top.postMessage({ type: 'TRADUTOR_PING' }, '*'); } catch(e) {}
     })();
   </script>
 </body>
