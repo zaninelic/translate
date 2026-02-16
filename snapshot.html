@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Criar Snapshot</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; padding: 16px; background: #fafbfc; color: #333; font-size: 13px; }
+    h2 { font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .info-box { background: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 0 6px 6px 0; padding: 12px; margin-bottom: 16px; font-size: 12px; }
+    .error-box { background: #ffebee; border: 1px solid #ef9a9a; border-radius: 6px; padding: 12px; margin-bottom: 12px; color: #c62828; font-size: 12px; }
+    .success-box { background: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 6px; padding: 12px; margin-bottom: 12px; color: #2e7d32; font-size: 12px; }
+    label { display: block; font-size: 11px; font-weight: 600; margin-bottom: 4px; color: #666; }
+    input, textarea { width: 100%; padding: 8px; margin-bottom: 12px; border: 1px solid #e0e6ed; border-radius: 4px; font-family: inherit; font-size: 12px; }
+    textarea { min-height: 60px; resize: vertical; }
+    .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.15s; }
+    .btn:hover { opacity: 0.85; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-success { background: #4caf50; color: white; }
+    .btn-back { background: white; color: #666; border: 1px solid #e0e6ed; margin-top: 8px; font-size: 11px; padding: 8px; }
+    .loading { display: none; text-align: center; padding: 16px; }
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #e0e6ed; border-top: 3px solid #4caf50; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <h2>📸 Criar Snapshot</h2>
+
+  <div id="pipe-info" class="info-box">
+    Configure o Connector ID abaixo para capturar o snapshot.
+  </div>
+
+  <div id="result"></div>
+
+  <label>Pipe ID (origem)</label>
+  <input id="pipe-id" type="text" placeholder="Ex: 302571234" />
+
+  <label>Conector Pipefy (ID)</label>
+  <input id="connector-id" type="text" placeholder="ID do conector configurado na plataforma" />
+
+  <label>Label da Versão</label>
+  <input id="version-label" type="text" placeholder="Ex: Ajustes Sprint 12" />
+
+  <label>Resumo das Alterações</label>
+  <textarea id="change-summary" rows="3" placeholder="Descreva o que mudou nesta versão..."></textarea>
+
+  <div id="loading" class="loading">
+    <div class="spinner"></div>
+    <p style="margin-top: 8px; color: #999;">Capturando schema via GraphQL...</p>
+  </div>
+
+  <button id="btn-snapshot" class="btn btn-success" onclick="createSnapshot()">📸 Capturar Snapshot</button>
+  <button class="btn btn-back" onclick="goBack()">← Voltar para versões</button>
+
+  <script>
+    var SNAPSHOT_API = 'https://iervmwscvspisxbktbpx.supabase.co/functions/v1/versioner-snapshot';
+    var SIDEBAR_PAGE = 'https://zaninelic.github.io/pipefy-versioner/sidebar.html';
+
+    var params = new URLSearchParams(window.location.search);
+    var urlPipeId = params.get('pipeId') || '';
+    if (urlPipeId) {
+      document.getElementById('pipe-id').value = urlPipeId;
+      document.getElementById('pipe-info').innerHTML = 'Pipe ID: <strong>' + urlPipeId + '</strong>';
+    }
+
+    async function createSnapshot() {
+      var pipeId = document.getElementById('pipe-id').value.trim();
+      var connectorId = document.getElementById('connector-id').value.trim();
+      var label = document.getElementById('version-label').value.trim();
+      var summary = document.getElementById('change-summary').value.trim();
+
+      if (!pipeId) { alert('Informe o Pipe ID'); return; }
+      if (!connectorId) { alert('Informe o ID do conector'); return; }
+
+      var btn = document.getElementById('btn-snapshot');
+      var loading = document.getElementById('loading');
+      var result = document.getElementById('result');
+
+      btn.disabled = true;
+      loading.style.display = 'block';
+      result.innerHTML = '';
+
+      try {
+        var res = await fetch(SNAPSHOT_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pipeId: pipeId,
+            connectorId: connectorId,
+            versionLabel: label || undefined,
+            changeSummary: summary || undefined,
+          }),
+        });
+
+        if (!res.ok) {
+          var err = await res.text();
+          throw new Error(err);
+        }
+
+        var data = await res.json();
+        result.innerHTML = '<div class="success-box">✅ Snapshot v' + (data.version && data.version.version ? data.version.version : data.version || '?') + ' criado com sucesso!</div>';
+      } catch (e) {
+        result.innerHTML = '<div class="error-box">❌ ' + e.message + '</div>';
+      } finally {
+        btn.disabled = false;
+        loading.style.display = 'none';
+      }
+    }
+
+    function goBack() {
+      var pipeId = document.getElementById('pipe-id').value.trim();
+      window.location.href = SIDEBAR_PAGE + '?pipeId=' + encodeURIComponent(pipeId);
+    }
+  </script>
+</body>
+</html>
