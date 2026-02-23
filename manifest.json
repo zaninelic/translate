@@ -2,7 +2,7 @@
   "version": "3.0.0",
   "name": "Tradutor Profectum",
   "short_description": "Traduza campos customizados nos seus pipes do Pipefy",
-  "description": "Traduza automaticamente rotulos de campos customizados, nomes de fases e opcoes de selecao.",
+  "description": "Traduza automaticamente rotulos de campos customizados, nomes de fases e opcoes de selecao. Suporta multiplos idiomas com traducoes por IA.",
   "icon": "./images/icon.png",
   "author": "Profectum",
   "init_url": "./init.html",
