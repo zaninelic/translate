@@ -1,46 +1,34 @@
-<!-- v2 deploy-force 2026-02-16T22:00:00Z -->
+<!-- v3 deploy-force 2026-02-10T22:40:00Z -->
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head><meta charset="UTF-8"><title>Versionador Init</title></head>
+<head>
+  <meta charset="UTF-8">
+  <title>Tradutor Init</title>
+</head>
 <body>
-<script src="https://platform.staticpipefy.com/pipefy-app.js" onerror="console.error('[Versionador] Failed to load Pipefy SDK')"></script>
+<script src="https://platform.staticpipefy.com/pipefy-app.js" onerror="console.error('[Tradutor] Failed to load Pipefy SDK')"></script>
 <script>
-  console.log('[Versionador] SDK loaded:', typeof PipefyApp);
-  var GITHUB_PAGES = 'https://zaninelic.github.io/pipefy-versioner';
+  console.log('[Tradutor] SDK loaded:', typeof PipefyApp);
   try {
     PipefyApp.initCall({
       'pipe-buttons': function(p, pipe) {
-        console.log('[Versionador] pipe-buttons called', pipe);
-        var pipeId = pipe && pipe.id ? pipe.id : '';
-        return [
-          {
-            icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FFFFFF'%3E%3Cpath d='M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z'/%3E%3C/svg%3E",
-            text: 'Versões',
-            callback: function(p) {
-              console.log('[Versionador] Opening sidebar for pipe:', pipeId);
-              p.sidebar({
-                title: 'Versionador de Pipes',
-                url: GITHUB_PAGES + '/sidebar.html?pipeId=' + encodeURIComponent(pipeId)
-              });
-            }
-          },
-          {
-            icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FFFFFF'%3E%3Cpath d='M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z'/%3E%3C/svg%3E",
-            text: 'Snapshot',
-            callback: function(p) {
-              console.log('[Versionador] Opening snapshot for pipe:', pipeId);
-              p.sidebar({
-                title: 'Criar Snapshot',
-                url: GITHUB_PAGES + '/snapshot.html?pipeId=' + encodeURIComponent(pipeId)
-              });
-            }
+        console.log('[Tradutor] pipe-buttons called', pipe);
+        return [{
+          icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FFFFFF'%3E%3Cpath d='M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0 0 14.07 6H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z'/%3E%3C/svg%3E",
+          text: 'Tradutor',
+          callback: function(p) {
+            console.log('[Tradutor] Opening sidebar');
+            p.sidebar({
+              title: 'Tradutor',
+              url: 'https://zaninelic.github.io/pipefy-tradutor/sidebar.html'
+            });
           }
-        ];
+        }];
       }
     });
-    console.log('[Versionador] initCall registered successfully');
+    console.log('[Tradutor] initCall registered successfully');
   } catch(e) {
-    console.error('[Versionador] initCall error:', e);
+    console.error('[Tradutor] initCall error:', e);
   }
 </script>
 </body>

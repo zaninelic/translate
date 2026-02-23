@@ -2,247 +2,231 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Versionador de Pipes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tradutor</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; padding: 16px; background: #fafbfc; color: #333; font-size: 13px; }
-    h2 { font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-    .tabs { display: flex; border-bottom: 2px solid #e0e6ed; margin-bottom: 16px; }
-    .tab { padding: 8px 14px; font-size: 11px; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; color: #666; transition: all 0.15s; }
-    .tab:hover { color: #333; }
-    .tab.active { color: #2196f3; border-bottom-color: #2196f3; }
-    .loading { text-align: center; padding: 32px; color: #999; }
-    .loading .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid #e0e6ed; border-top: 3px solid #2196f3; border-radius: 50%; animation: spin 0.8s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .error-box { background: #ffebee; border: 1px solid #ef9a9a; border-radius: 6px; padding: 12px; margin-bottom: 12px; color: #c62828; font-size: 12px; }
-    .info-box { background: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 0 6px 6px 0; padding: 12px; margin-bottom: 12px; font-size: 12px; }
-    .success-box { background: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 6px; padding: 12px; margin-bottom: 12px; color: #2e7d32; font-size: 12px; }
-    .version-card { background: #fff; border: 1px solid #e0e6ed; border-radius: 8px; padding: 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
-    .version-card:hover { border-color: #2196f3; box-shadow: 0 2px 8px rgba(33,150,243,0.1); }
-    .version-card.selected { border-color: #2196f3; background: #e3f2fd; }
-    .version-header { display: flex; justify-content: space-between; align-items: center; }
-    .version-label { font-weight: 700; font-size: 13px; }
-    .version-badge { font-size: 10px; padding: 2px 8px; border-radius: 12px; font-weight: 600; text-transform: uppercase; }
-    .badge-draft { background: #fff3e0; color: #e65100; }
-    .badge-published { background: #e8f5e9; color: #2e7d32; }
-    .badge-approved { background: #e3f2fd; color: #1565c0; }
-    .badge-pending_approval { background: #f3e5f5; color: #7b1fa2; }
-    .badge-pre_publish_backup { background: #fce4ec; color: #c62828; }
-    .version-meta { font-size: 11px; color: #999; margin-top: 4px; }
-    .version-summary { font-size: 12px; color: #666; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #eee; }
-    .compare-select { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; margin-bottom: 12px; }
-    .compare-select select { width: 100%; padding: 6px; border: 1px solid #e0e6ed; border-radius: 4px; font-size: 11px; }
-    .compare-select .arrow { text-align: center; font-size: 16px; }
-    .diff-section { background: #fff; border: 1px solid #e0e6ed; border-radius: 8px; padding: 12px; margin-bottom: 8px; }
-    .diff-title { font-weight: 600; font-size: 13px; margin-bottom: 8px; }
-    .diff-item { font-size: 12px; padding: 4px 8px; margin: 2px 0; border-radius: 4px; }
-    .diff-add { background: #e8f5e9; color: #2e7d32; }
-    .diff-remove { background: #ffebee; color: #c62828; }
-    .actions { display: flex; gap: 8px; margin-top: 16px; }
-    .btn { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: 600; font-size: 11px; cursor: pointer; transition: all 0.15s; }
-    .btn:hover { opacity: 0.85; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-primary { background: #2196f3; color: white; }
-    .btn-success { background: #4caf50; color: white; }
-    .btn-danger { background: #f44336; color: white; }
-    .empty { text-align: center; padding: 32px; color: #999; font-size: 12px; }
-    .panel { display: none; }
-    .panel.active { display: block; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 20px; color: #1a1a2e; background: #fafbfc; min-height: 100vh;
+    }
+    h2 { font-size: 18px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+    .pipe-name { font-size: 13px; color: #666; margin-bottom: 16px; font-weight: 400; }
+    .subtitle { font-size: 13px; color: #666; margin-bottom: 16px; }
+    .lang-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+    .lang-btn {
+      padding: 10px 12px; border: 2px solid #e0e6ed; border-radius: 8px;
+      background: #fff; cursor: pointer; font-size: 14px; text-align: center;
+      font-weight: 400; transition: all 0.15s;
+    }
+    .lang-btn:hover { border-color: #b0bec5; }
+    .lang-btn.active { border-color: #4a90d9; background: #e8f0fe; font-weight: 600; }
+    .status {
+      padding: 12px; border-radius: 8px; font-size: 13px; margin-top: 12px;
+    }
+    .status-success { background: #e8f5e9; color: #2e7d32; }
+    .status-info { background: #e3f2fd; color: #1565c0; }
+    .status-error { background: #ffebee; color: #c62828; }
+    .term-count { font-size: 12px; color: #8899aa; margin-top: 8px; }
+    .reset-btn {
+      margin-top: 16px; padding: 8px 16px; border: 1px solid #e0e6ed;
+      border-radius: 6px; background: #fff; cursor: pointer; font-size: 13px; color: #666;
+    }
+    .reset-btn:hover { background: #f5f5f5; }
+    .loading { font-size: 13px; color: #999; text-align: center; }
+    .auto-badge { font-size: 11px; color: #4a90d9; margin-left: 4px; }
   </style>
 </head>
 <body>
-  <h2>🔄 Versionador</h2>
+  <h2>🌐 Tradutor <span id="companion-badge" style="display:none;font-size:11px;color:#10b981;background:#e8f5e9;padding:2px 8px;border-radius:12px;">● Companion ativo</span></h2>
+  <p class="pipe-name" id="pipe-name"></p>
+  <p class="subtitle">Selecione o idioma para traduzir os campos customizados:</p>
+  <div id="content"><p class="loading">Carregando...</p></div>
+  <div id="status-area"></div>
+  <div id="actions"></div>
 
-  <div id="error-container"></div>
-
-  <div class="tabs">
-    <div class="tab active" data-tab="versions">Versões</div>
-    <div class="tab" data-tab="compare">Comparar</div>
-  </div>
-
-  <div id="panel-versions" class="panel active">
-    <div id="versions-loading" class="loading"><div class="spinner"></div><p>Carregando versões...</p></div>
-    <div id="versions-list" style="display:none;"></div>
-    <div id="versions-empty" class="empty" style="display:none;">
-      Nenhuma versão encontrada.<br/>Crie um snapshot para começar.
-    </div>
-  </div>
-
-  <div id="panel-compare" class="panel">
-    <div class="compare-select">
-      <select id="compare-from"><option value="">Versão base</option></select>
-      <div class="arrow">→</div>
-      <select id="compare-to"><option value="">Versão alvo</option></select>
-    </div>
-    <button class="btn btn-primary" onclick="runCompare()" style="width:100%; margin-bottom:12px;">Comparar</button>
-    <div id="compare-result"></div>
-  </div>
-
-  <div class="actions">
-    <button class="btn btn-primary" onclick="openSnapshot()">📸 Snapshot</button>
-    <button class="btn btn-danger" id="btn-rollback" onclick="runRollback()" disabled>↩️ Rollback</button>
-  </div>
-
-  <div id="feedback" style="margin-top:12px;"></div>
-
+  <script src="https://platform.staticpipefy.com/pipefy-app.js"></script>
   <script>
-    var SUPABASE_URL = 'https://iervmwscvspisxbktbpx.supabase.co';
-    var API_URL = SUPABASE_URL + '/functions/v1/versioner-sidebar';
-    var SNAPSHOT_PAGE = 'https://zaninelic.github.io/pipefy-versioner/snapshot.html';
+    (function() {
+      var SUPABASE_URL = 'https://iervmwscvspisxbktbpx.supabase.co';
+      var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImllcnZtd3NjdnNwaXN4Ymt0YnB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyMDAyNjgsImV4cCI6MjA4NDc3NjI2OH0.hs5OeBEmzEXFrSv1x5kassgo7Po0HTBhN94gaswz3RE';
+      var APP_ID = 'eecfcaa4-e831-46b6-b8e8-a352f056f8e1';
 
-    var params = new URLSearchParams(window.location.search);
-    var PIPE_ID = params.get('pipeId') || '';
-    var versions = [];
-    var selectedVersionId = null;
+      var LANG_LABELS = {
+        en: 'English', es: 'Español', fr: 'Français', de: 'Deutsch',
+        it: 'Italiano', pt: 'Português', 'pt-BR': 'Português (BR)',
+        ja: '日本語', ko: '한국어', zh: '中文'
+      };
 
-    // Tab switching
-    document.querySelectorAll('.tab').forEach(function(tab) {
-      tab.addEventListener('click', function() {
-        document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
-        document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
-        tab.classList.add('active');
-        document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+      var p = PipefyApp.init();
+      var userLocale = p.locale || '';
+      var selectedLang = '';
+      var companionActive = false;
+
+      var contentEl = document.getElementById('content');
+      var statusArea = document.getElementById('status-area');
+      var actionsEl = document.getElementById('actions');
+      var pipeNameEl = document.getElementById('pipe-name');
+
+      function notify(msg, type) {
+        // 2. Notificação nativa + fallback visual
+        try { p.showNotification(msg, type === 'success' ? 'success' : 'error'); } catch(e) {}
+        showStatus(msg, type);
+      }
+
+      function showStatus(msg, type) {
+        statusArea.innerHTML = '<div class="status status-' + type + '">' + msg + '</div>';
+      }
+
+      function renderLanguages(languages, autoLang) {
+        if (languages.length === 0) {
+          contentEl.innerHTML = '<p class="loading">Nenhum idioma disponível. Configure traduções primeiro.</p>';
+          return;
+        }
+        var html = '<div class="lang-grid">';
+        languages.forEach(function(lang) {
+          var label = LANG_LABELS[lang] || lang.toUpperCase();
+          html += '<button class="lang-btn" data-lang="' + lang + '">' + label + '</button>';
+        });
+        html += '</div>';
+        contentEl.innerHTML = html;
+
+        contentEl.querySelectorAll('.lang-btn').forEach(function(btn) {
+          btn.addEventListener('click', function() { selectLanguage(btn.dataset.lang); });
+        });
+
+        // Auto-selecionar se houver idioma detectado
+        if (autoLang) {
+          selectLanguage(autoLang);
+        }
+      }
+
+      function updateActiveButton(lang) {
+        contentEl.querySelectorAll('.lang-btn').forEach(function(btn) {
+          btn.classList.toggle('active', btn.dataset.lang === lang);
+        });
+      }
+
+      function applyTranslations(dictionary) {
+        try {
+          window.top.postMessage({
+            type: 'TRADUTOR_APPLY',
+            dictionary: dictionary
+          }, '*');
+          if (companionActive) {
+            notify('✅ Traduções enviadas!', 'success');
+          } else {
+            showStatus('⚠️ Traduções enviadas, mas o Companion pode não estar ativo. Clique no bookmarklet Companion na barra de favoritos.', 'info');
+          }
+          statusArea.innerHTML += '<p class="term-count">' + Object.keys(dictionary).length + ' termos no dicionário</p>';
+        } catch (e) {
+          notify('⚠️ Erro ao enviar traduções: ' + (e.message || e), 'error');
+        }
+      }
+
+      function selectLanguage(lang) {
+        selectedLang = lang;
+        updateActiveButton(lang);
+        showStatus('Carregando traduções...', 'info');
+
+        // Persist preference
+        try { p.set('pipe', 'private', 'lang', lang); } catch(e) {}
+
+        fetch(SUPABASE_URL + '/functions/v1/pipefy-app-translations?app_id=' + APP_ID + '&lang=' + encodeURIComponent(lang), {
+          headers: { apikey: SUPABASE_KEY }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          applyTranslations(data.dictionary || {});
+          actionsEl.innerHTML = '<button class="reset-btn" id="reset-btn">↩ Restaurar original</button>';
+          document.getElementById('reset-btn').addEventListener('click', resetTranslations);
+        })
+        .catch(function() {
+          notify('Erro ao buscar traduções.', 'error');
+        });
+      }
+
+      function resetTranslations() {
+        try {
+          window.top.postMessage({ type: 'TRADUTOR_RESET' }, '*');
+        } catch(e) {}
+        selectedLang = '';
+        updateActiveButton('');
+        notify('Traduções restauradas ao original.', 'info');
+        actionsEl.innerHTML = '';
+        try { p.set('pipe', 'private', 'lang', ''); } catch(e) {}
+      }
+
+      // Normalizar locale do usuario para match (ex: pt-br -> pt-BR, en-US -> en)
+      function matchLocale(locale, languages) {
+        if (!locale) return '';
+        // Match exato
+        if (languages.indexOf(locale) !== -1) return locale;
+        // Match case-insensitive
+        var lower = locale.toLowerCase();
+        for (var i = 0; i < languages.length; i++) {
+          if (languages[i].toLowerCase() === lower) return languages[i];
+        }
+        // Match prefixo (ex: en-US -> en)
+        var prefix = locale.split('-')[0].toLowerCase();
+        for (var j = 0; j < languages.length; j++) {
+          if (languages[j].toLowerCase() === prefix) return languages[j];
+        }
+        return '';
+      }
+
+      // 3. Carregamento paralelo com Promise.all + 4. Contexto do pipe
+      var fetchLangs = fetch(SUPABASE_URL + '/functions/v1/pipefy-app-translations?app_id=' + APP_ID, {
+        headers: { apikey: SUPABASE_KEY }
+      }).then(function(r) { return r.json(); });
+
+      var getSavedLang = Promise.resolve('');
+      try {
+        getSavedLang = p.get('pipe', 'private', 'lang').catch(function() { return ''; });
+      } catch(e) {}
+
+      var getPipeName = Promise.resolve('');
+      try {
+        getPipeName = p.pipe().then(function(pipe) { return (pipe && pipe.name) || ''; }).catch(function() { return ''; });
+      } catch(e) {}
+
+      Promise.all([fetchLangs, getSavedLang, getPipeName])
+        .then(function(results) {
+          var data = results[0];
+          var savedLang = results[1];
+          var pipeName = results[2];
+          var languages = data.languages || [];
+
+          // 4. Mostrar nome do pipe no header
+          if (pipeName) {
+            pipeNameEl.textContent = pipeName;
+          }
+
+          // Determinar idioma a auto-selecionar
+          var autoLang = '';
+          if (savedLang && languages.indexOf(savedLang) !== -1) {
+            autoLang = savedLang;
+          } else {
+            // 1. Tentar auto-detecção via p.locale
+            autoLang = matchLocale(userLocale, languages);
+          }
+
+          renderLanguages(languages, autoLang);
+        })
+        .catch(function() {
+          contentEl.innerHTML = '<p class="loading" style="color:#c62828;">Erro ao carregar idiomas.</p>';
+        });
+
+      // Ping/pong para verificar se o Companion está ativo
+      window.addEventListener('message', function(e) {
+        if (e.data && e.data.type === 'TRADUTOR_PONG') {
+          companionActive = true;
+          var badge = document.getElementById('companion-badge');
+          if (badge) badge.style.display = 'inline';
+        }
       });
-    });
-
-    function renderVersions() {
-      var list = document.getElementById('versions-list');
-      var empty = document.getElementById('versions-empty');
-      var loading = document.getElementById('versions-loading');
-      loading.style.display = 'none';
-
-      if (versions.length === 0) {
-        empty.style.display = 'block';
-        list.style.display = 'none';
-        return;
-      }
-
-      empty.style.display = 'none';
-      list.style.display = 'block';
-
-      list.innerHTML = versions.map(function(v) {
-        var badgeClass = 'badge-' + (v.status || 'draft');
-        var isSelected = v.id === selectedVersionId;
-        var date = new Date(v.created_at).toLocaleDateString('pt-BR');
-        var trigger = v.trigger_type === 'pre_publish_backup' ? '🤖 Auto' : '👤 Manual';
-        return '<div class="version-card' + (isSelected ? ' selected' : '') + '" onclick="selectVersion(\'' + v.id + '\')">'
-          + '<div class="version-header">'
-          + '<span class="version-label">v' + v.version + (v.version_label ? ' — ' + v.version_label : '') + '</span>'
-          + '<span class="version-badge ' + badgeClass + '">' + v.status + '</span>'
-          + '</div>'
-          + '<div class="version-meta">📅 ' + date + ' • ' + trigger + '</div>'
-          + (v.change_summary ? '<div class="version-summary">' + v.change_summary + '</div>' : '')
-          + '</div>';
-      }).join('');
-
-      var opts = versions.map(function(v) { return '<option value="' + v.id + '">v' + v.version + (v.version_label ? ' - ' + v.version_label : '') + '</option>'; }).join('');
-      document.getElementById('compare-from').innerHTML = '<option value="">Versão base</option>' + opts;
-      document.getElementById('compare-to').innerHTML = '<option value="">Versão alvo</option>' + opts;
-    }
-
-    function selectVersion(id) {
-      selectedVersionId = id;
-      document.getElementById('btn-rollback').disabled = false;
-      renderVersions();
-    }
-
-    function showFeedback(msg, type) {
-      var el = document.getElementById('feedback');
-      var cls = type === 'error' ? 'error-box' : type === 'success' ? 'success-box' : 'info-box';
-      el.innerHTML = '<div class="' + cls + '">' + msg + '</div>';
-      setTimeout(function() { el.innerHTML = ''; }, 8000);
-    }
-
-    function openSnapshot() {
-      window.location.href = SNAPSHOT_PAGE + '?pipeId=' + encodeURIComponent(PIPE_ID);
-    }
-
-    async function loadVersions() {
-      if (!PIPE_ID) {
-        document.getElementById('error-container').innerHTML = '<div class="error-box">⚠️ Pipe ID não detectado. Abra o versionador a partir de um pipe.</div>';
-        document.getElementById('versions-loading').style.display = 'none';
-        return;
-      }
-      try {
-        var res = await fetch(API_URL + '?pipeId=' + encodeURIComponent(PIPE_ID) + '&action=list', {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-        });
-        var data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Erro ao carregar versões');
-        versions = data.versions || [];
-        renderVersions();
-      } catch(e) {
-        document.getElementById('versions-loading').innerHTML = '<div class="error-box">❌ ' + e.message + '</div>';
-      }
-    }
-
-    async function runCompare() {
-      var fromId = document.getElementById('compare-from').value;
-      var toId = document.getElementById('compare-to').value;
-      if (!fromId || !toId) { alert('Selecione duas versões'); return; }
-      document.getElementById('compare-result').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-      try {
-        var res = await fetch(API_URL + '?action=compare', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fromId: fromId, toId: toId }),
-        });
-        var result = await res.json();
-        if (!res.ok) throw new Error(result.error || 'Erro ao comparar');
-        renderDiff(result);
-      } catch(e) {
-        document.getElementById('compare-result').innerHTML = '<div class="error-box">' + e.message + '</div>';
-      }
-    }
-
-    function renderDiff(result) {
-      var container = document.getElementById('compare-result');
-      if (!result || !result.diff) {
-        container.innerHTML = '<div class="info-box">Nenhuma diferença encontrada.</div>';
-        return;
-      }
-      var html = '<div class="info-box">v' + result.from.version + ' → v' + result.to.version + '</div>';
-      var diff = result.diff;
-      if (diff.phases && (diff.phases.added.length || diff.phases.removed.length)) {
-        html += '<div class="diff-section"><div class="diff-title">📋 Fases</div>';
-        diff.phases.added.forEach(function(p) { html += '<div class="diff-item diff-add">+ ' + p + '</div>'; });
-        diff.phases.removed.forEach(function(p) { html += '<div class="diff-item diff-remove">- ' + p + '</div>'; });
-        html += '</div>';
-      }
-      if (diff.fields && (diff.fields.added.length || diff.fields.removed.length)) {
-        html += '<div class="diff-section"><div class="diff-title">🏷️ Campos</div>';
-        diff.fields.added.forEach(function(f) { html += '<div class="diff-item diff-add">+ ' + f + '</div>'; });
-        diff.fields.removed.forEach(function(f) { html += '<div class="diff-item diff-remove">- ' + f + '</div>'; });
-        html += '</div>';
-      }
-      if (diff.labels && (diff.labels.added.length || diff.labels.removed.length)) {
-        html += '<div class="diff-section"><div class="diff-title">🏷️ Etiquetas</div>';
-        diff.labels.added.forEach(function(l) { html += '<div class="diff-item diff-add">+ ' + l + '</div>'; });
-        diff.labels.removed.forEach(function(l) { html += '<div class="diff-item diff-remove">- ' + l + '</div>'; });
-        html += '</div>';
-      }
-      container.innerHTML = html || '<div class="info-box">Schemas idênticos.</div>';
-    }
-
-    async function runRollback() {
-      if (!selectedVersionId) return;
-      if (!confirm('Tem certeza que deseja restaurar esta versão?')) return;
-      try {
-        var res = await fetch(API_URL + '?action=rollback', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ versionId: selectedVersionId }),
-        });
-        var result = await res.json();
-        if (!res.ok) throw new Error(result.error || 'Erro no rollback');
-        showFeedback('✅ Versão preparada para rollback!', 'success');
-      } catch(e) {
-        showFeedback('❌ ' + e.message, 'error');
-      }
-    }
-
-    loadVersions();
+      try { window.top.postMessage({ type: 'TRADUTOR_PING' }, '*'); } catch(e) {}
+    })();
   </script>
 </body>
 </html>
